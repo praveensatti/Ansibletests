@@ -1,0 +1,14 @@
+##play book for installing Git on ubuntu instance
+---
+- hosts: all
+  vars:
+  - packages:
+      - git
+      - openjdk-8-jdk
+      - maven
+- become: true
+- tasks:
+  - name: install list of packages
+    package:
+      name: "{{ packages }}"
+      state: present
