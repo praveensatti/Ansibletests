@@ -1,0 +1,36 @@
+---
+- name: Ensure custom application logs root exists
+  ansible.builtin.file:
+    path: "{{ app_logs_root_dir }}"
+    state: directory
+    owner: "{{ wildfly_user }}"
+    group: "{{ wildfly_group }}"
+    mode: "0755"
+
+- name: Ensure custom log directory exists for each deployed app
+  ansible.builtin.file:
+    path: "{{ app_logs_root_dir }}/{{ item.name }}"
+    state: directory
+    owner: "{{ wildfly_user }}"
+    group: "{{ wildfly_group }}"
+    mode: "0755"
+  loop: "{{ deployed_wars }}"
+
+- name: Configure runtime log variables for WildFly service
+  ansible.builtin.copy:
+    dest: "/etc/default/{{ wildfly_service_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible
+      APP_LOGS_ROOT_DIR={{ app_logs_root_dir }}
+      APP_LOG_MODE={{ app_log_mode }}
+      JAVA_OPTS="$JAVA_OPTS -Dapp.logs.root={{ app_logs_root_dir }} -Dapp.log.mode={{ app_log_mode }}"
+  notify: Restart WildFly
+
+- name: Ensure WildFly service is enabled and running
+  ansible.builtin.service:
+    name: "{{ wildfly_service_name }}"
+    state: started
+    enabled: true

@@ -1,0 +1,23 @@
+---
+- name: Flush handlers before validation
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for configured application ports to be reachable
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ item.port }}"
+    timeout: 120
+    delay: 5
+  loop: "{{ deployed_wars }}"
+
+- name: Check application health endpoints
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ item.port }}{{ item.healthcheck_path | default('/') }}"
+    method: GET
+    return_content: false
+    status_code: [200, 301, 302, 401, 403]
+  loop: "{{ deployed_wars }}"
+  register: deployment_health_results
+  retries: 6
+  delay: 10
+  until: deployment_health_results is succeeded

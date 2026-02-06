@@ -1,0 +1,34 @@
+---
+- name: Validate log mode value
+  ansible.builtin.assert:
+    that:
+      - app_log_mode in ['info', 'debug']
+    fail_msg: "app_log_mode must be either 'info' or 'debug'."
+
+- name: Validate deployed war definitions
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.war_url is defined
+      - item.war_file_name is defined
+      - item.port is defined
+    fail_msg: "Each deployed_wars entry must define name, war_url, war_file_name, and port."
+  loop: "{{ deployed_wars }}"
+
+- name: Download WAR files
+  ansible.builtin.get_url:
+    url: "{{ item.war_url }}"
+    dest: "/tmp/{{ item.war_file_name }}"
+    mode: "0644"
+  loop: "{{ deployed_wars }}"
+
+- name: Deploy WAR files to WildFly deployments directory
+  ansible.builtin.copy:
+    src: "/tmp/{{ item.war_file_name }}"
+    dest: "{{ wildfly_deployments_dir }}/{{ item.war_file_name }}"
+    remote_src: true
+    owner: "{{ wildfly_user }}"
+    group: "{{ wildfly_group }}"
+    mode: "0644"
+  loop: "{{ deployed_wars }}"
+  notify: Restart WildFly

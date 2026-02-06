@@ -1,0 +1,39 @@
+---
+- name: Install WildFly and deploy WAR applications
+  hosts: all
+  become: true
+
+  vars:
+    wildfly_service_name: "wildfly"
+    wildfly_deployments_dir: "/opt/wildfly/standalone/deployments"
+    wildfly_user: "wildfly"
+    wildfly_group: "wildfly"
+
+    app_logs_root_dir: "/var/log/wildfly/apps"
+    app_log_mode: "info" # supported values: info, debug
+
+    deployed_wars:
+      - name: "jenkins"
+        war_url: "https://get.jenkins.io/war-stable/latest/jenkins.war"
+        war_file_name: "jenkins.war"
+        port: 8080
+        healthcheck_path: "/jenkins/login"
+
+  roles:
+    - role: java
+      tags:
+        - java
+
+    - role: wildfly
+      tags:
+        - wildfly
+
+    - role: app_war_deploy
+      tags:
+        - deploy
+        - applications
+
+    - role: deployment_validation
+      tags:
+        - test
+        - validate
