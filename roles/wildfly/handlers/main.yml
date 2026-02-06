@@ -1,0 +1,5 @@
+---
+- name: Restart WildFly
+  ansible.builtin.service:
+    name: "{{ wildfly_service_name }}"
+    state: restarted
